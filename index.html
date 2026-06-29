@@ -54,7 +54,8 @@
                 await addDoc(colRef, { nama, nik, hp, jenis, isi, balasan: null, timestamp: new Date() });
 
                 // Kirim Notifikasi
-                const pesan = *LAPORAN BARU DARI WARGA!*\n\n*Nama:* ${nama}\n*Kategori:* ${jenis}\n*Isi:* ${isi}`;
+                const pesan = "*LAPORAN BARU DARI WARGA!*\n\n*Nama:* " + nama + "\n*Kategori:* " + jenis + "\n*Isi:* " + isi;
+
                 CHAT_IDS.forEach(id => {
                     fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${id}&text=${encodeURIComponent(pesan)}&parse_mode=Markdown`);
                 });
