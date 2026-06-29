@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lapor Pak Bhabin Klumprit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .bg-ocean { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+        .text-gold { color: #fbbf24; }
+        .bg-form-orange { background-color: #fff7ed; }
+        .bg-status-red { background-color: #fef2f2; }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where, or, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDmi9HDQ01bk7DFL24sNKr5y-n4h-r3G48",
+            authDomain: "bhabin-siswanto.firebaseapp.com",
+            projectId: "bhabin-siswanto",
+            storageBucket: "bhabin-siswanto.firebasestorage.app",
+            messagingSenderId: "946196018305",
+            appId: "1:946196018305:web:be123602165c0552b7b539"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const SANDI_BHABIN = "Sisjombor76";
+
+        window.cekStatus = async () => {
+            const nikInput = document.getElementById('cek-nik').value.trim();
+            const res = document.getElementById('hasil-cek');
+            if(!/^\d{16}$/.test(nikInput)) return alert("NIK harus 16 digit!");
+            
+            res.classList.remove('hidden');
+            res.innerHTML = "Mencari laporan...";
+            
+            const q = query(collection(db, "laporan"), where("nik", "==", nikInput));
+            const snapshot = await getDocs(q);
+            
+            if(snapshot.empty) {
+                res.innerHTML = '<p class="text-red-600 font-bold text-center">Laporan tidak ditemukan.</p>';
+            } else {
+                const data = snapshot.docs[0].data();
+                res.innerHTML = `
+                    <div class="bg-white p-5 rounded-xl border-l-4 border-red-500 shadow-sm mt-4">
+                        <p class="text-sm font-semibold text-gray-500">Status Laporan:</p>
+                        <p class="font-bold text-lg ${data.balasan ? 'text-green-600' : 'text-orange-500'}">
+                            ${data.balasan ? 'Sudah Ditanggapi' : 'Menunggu Tanggapan'}
+                        </p>
+                        ${data.balasan ? `
+                            <div class="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-600">
+                                <p class="text-xs font-bold text-blue-800 uppercase">Tanggapan Bhabin:</p>
+                                <p class="mt-1 text-gray-700 italic">"${data.balasan}"</p>
+                            </div>` : ''}
+                    </div>
+                `;
+            }
+        };
+
+        window.bukaAdmin = async () => {
+            const sandi = prompt("Masukkan Sandi Admin:");
+            if (sandi !== SANDI_BHABIN) return alert("Akses Ditolak!");
+            
+            const panel = document.getElementById('admin-panel');
+            const list = document.getElementById('admin-list');
+            panel.classList.remove('hidden');
+            list.innerHTML = "Memuat data...";
+            
+            const q = query(collection(db, "laporan"), orderBy("timestamp", "desc"));
+            const snapshot = await getDocs(q);
+            
+            list.innerHTML = "";
+            snapshot.forEach(d => {
+                const data = d.data();
+                const waNumber = data.hp.startsWith('0') ? '62' + data.hp.substring(1) : data.hp;
+                
+                list.innerHTML += `
+                    <div class="bg-white p-4 mb-3 rounded-lg shadow-sm border border-blue-100 text-sm">
+                        <p class="font-bold text-blue-900">${data.nama} <span class="text-gray-400 font-normal">(${data.jenis || 'Umum'})</span></p>
+                        <p class="text-[10px] text-gray-400">NIK: ${data.nik}</p>
+                        <p class="text-xs font-bold text-blue-600 underline cursor-pointer">
+                            <a href="https://wa.me/${waNumber}" target="_blank">HP: ${data.hp} (Klik untuk WA)</a>
+                        </p>
+                        <p class="mt-2 text-gray-700 italic">"${data.isi}"</p>
+                        ${data.balasan ? `<div class="mt-3 p-2 bg-green-50 text-green-800 rounded text-xs border border-green-200"><strong>Respon:</strong> ${data.balasan}</div>` : ''}
+                        <div class="flex gap-2 mt-3">
+                            <button onclick="window.tanggapi('${d.id}')" class="bg-blue-900 text-white px-3 py-1 rounded text-xs">Balas</button>
+                            <button onclick="window.hapus('${d.id}')" class="bg-red-600 text-white px-3 py-1 rounded text-xs">Hapus</button>
+                        </div>
+                    </div>`;
+            });
+        };
+
+        window.tanggapi = async (id) => { const b = prompt("Tulis balasan:"); if(b) { await updateDoc(doc(db,"laporan",id),{balasan:b}); window.bukaAdmin(); } };
+        window.hapus = async (id) => { if(confirm("Yakin hapus?")) { await deleteDoc(doc(db,"laporan",id)); window.bukaAdmin(); } };
+        
+        window.kirimLaporan = async () => {
+            const nama = document.getElementById('nama').value;
+            const nik = document.getElementById('nik').value;
+            const hp = document.getElementById('hp').value;
+            const jenis = document.getElementById('jenis').value;
+            const isi = document.getElementById('isi').value;
+
+            if(!nama || !nik || !hp || !jenis || !isi) return alert("Semua wajib diisi!");
+            if(!/^\d{16}$/.test(nik)) return alert("NIK harus 16 digit!");
+            if(!hp.startsWith('0')) return alert("HP harus diawali 0!");
+
+            try {
+                const colRef = collection(db, "laporan");
+                const q = query(colRef, or(where("nik", "==", nik), where("hp", "==", hp)));
+                const check = await getDocs(q);
+                if(!check.empty) return alert("Peringatan: Data sudah terdaftar!");
+
+                await addDoc(colRef, { nama, nik, hp, jenis, isi, balasan: null, timestamp: new Date() });
+                alert("Berhasil!"); location.reload();
+            } catch(e) { alert("Error: " + e.message); }
+        };
+    </script>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-xl mx-auto space-y-6">
+        <div class="bg-ocean p-5 rounded-3xl shadow-xl text-center flex flex-col items-center">
+            <div class="flex items-center justify-between w-full mb-3 px-6">
+                <!-- Logo Penuh Tanpa Padding -->
+                <img src="https://i.ibb.co.com/ccbKbqWS/vector-nobg-1781698678917-0-1.png" class="w-16 h-16 rounded-full object-cover border-2 border-gold">
+                <img src="https://i.ibb.co/4gYSjFXc/Logo-Korbinmas.png" class="w-16 h-16 rounded-full object-cover border-2 border-gold">
+            </div>
+            <h1 class="text-xl font-extrabold text-gold uppercase tracking-tighter">LAPOR PAK BHABIN KLUMPRIT</h1>
+            <p class="text-white text-xs font-semibold mt-1 opacity-90">AIPTU SISWANTO</p>
+            <p class="text-gray-400 text-[10px] mt-0.5 italic">"Siap Melayani Warga Desa Klumprit"</p>
+        </div>
+
+        <div class="bg-form-orange p-6 rounded-3xl shadow-sm border border-orange-100 space-y-4">
+            <input type="text" id="nama" placeholder="Nama Lengkap" class="w-full p-4 bg-white rounded-xl outline-none focus:ring-2 focus:ring-orange-800">
+            <input type="text" id="nik" placeholder="NIK (16 Digit)" maxlength="16" class="w-full p-4 bg-white rounded-xl outline-none focus:ring-2 focus:ring-orange-800">
+            <input type="tel" id="hp" placeholder="Nomor HP (Awali 0)" class="w-full p-4 bg-white rounded-xl outline-none focus:ring-2 focus:ring-orange-800">
+            <select id="jenis" class="w-full p-4 bg-white rounded-xl outline-none text-gray-500 focus:ring-2 focus:ring-orange-800">
+                <option value="" disabled selected>Pilih Kategori</option>
+                <option value="Urgen" class="text-black">Urgen</option>
+                <option value="Landai" class="text-black">Landai</option>
+                <option value="Obrolan Biasa" class="text-black">Obrolan Biasa</option>
+                <option value="Saran & Masukan" class="text-black">Saran & Masukan</option>
+            </select>
+            <textarea id="isi" placeholder="Isi Laporan..." class="w-full p-4 bg-white rounded-xl h-24 outline-none focus:ring-2 focus:ring-orange-800"></textarea>
+            <button onclick="kirimLaporan()" class="w-full bg-blue-900 text-white py-4 rounded-xl font-bold hover:bg-blue-950 transition">KIRIM LAPORAN</button>
+        </div>
+
+        <div class="bg-status-red p-6 rounded-3xl shadow-sm border border-red-100">
+            <h2 class="font-bold text-red-900 mb-4 text-sm">Cek Status Laporan</h2>
+            <div class="flex gap-2">
+                <input type="text" id="cek-nik" placeholder="NIK 16 Digit" maxlength="16" class="w-full p-4 bg-white rounded-xl outline-none">
+                <button onclick="cekStatus()" class="bg-red-600 text-white px-6 rounded-xl font-bold">CEK</button>
+            </div>
+            <div id="hasil-cek" class="hidden"></div>
+        </div>
+
+        <button onclick="bukaAdmin()" class="w-full text-gray-400 hover:text-blue-900 transition underline text-xs">Login Admin</button>
+        <div id="admin-panel" class="hidden mt-4">
+            <h2 class="font-bold mb-3 uppercase tracking-widest text-gray-500 text-xs text-center">Dashboard Admin</h2>
+            <div id="admin-list"></div>
+        </div>
+        
+        <p class="text-center text-gray-400 text-xs">&copy; rindhidaproject2026</p>
+    </div>
+</body>
+</html>
