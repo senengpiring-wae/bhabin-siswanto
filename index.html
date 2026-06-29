@@ -54,7 +54,7 @@
                 await addDoc(colRef, { nama, nik, hp, jenis, isi, balasan: null, timestamp: new Date() });
 
                 // Kirim Notifikasi
-                const pesan = "*LAPORAN BARU DARI WARGA!*\n\n*Nama:* " + nama + "\n*Kategori:* " + jenis + "\n*Isi:* " + isi;
+                const pesan = `LAPORAN BARU DARI WARGA! \n\nNama: ${nama}\nKategori: ${jenis}\nIsi: ${isi}`;
 
                 CHAT_IDS.forEach(id => {
                     fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${id}&text=${encodeURIComponent(pesan)}&parse_mode=Markdown`);
@@ -69,8 +69,7 @@
             const nikInput = document.getElementById('cek-nik').value.trim();
             const res = document.getElementById('hasil-cek');
             if(!/^\d{16}$/.test(nikInput)) return alert("NIK harus 16 digit!");
-            
-            res.classList.remove('hidden');
+                       res.classList.remove('hidden');
             res.innerHTML = "Mencari laporan...";
             
             const q = query(collection(db, "laporan"), where("nik", "==", nikInput));
