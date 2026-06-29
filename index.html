@@ -30,6 +30,40 @@
         const db = getFirestore(app);
         const SANDI_BHABIN = "Sisjombor76";
 
+        // Konfigurasi Telegram
+        const TELEGRAM_TOKEN = "8629563320:AAHf-WEAFK4fKRgbVFh6_Syy3YxFEUaRcxc";
+        const CHAT_IDS = ["106563004", "7123206110"]; 
+
+        window.kirimLaporan = async () => {
+            const nama = document.getElementById('nama').value;
+            const nik = document.getElementById('nik').value;
+            const hp = document.getElementById('hp').value;
+            const jenis = document.getElementById('jenis').value;
+            const isi = document.getElementById('isi').value;
+
+            if(!nama || !nik || !hp || !jenis || !isi) return alert("Semua wajib diisi!");
+            if(!/^\d{16}$/.test(nik)) return alert("NIK harus 16 digit!");
+            if(!hp.startsWith('0')) return alert("HP harus diawali 0!");
+
+            try {
+                const colRef = collection(db, "laporan");
+                const q = query(colRef, or(where("nik", "==", nik), where("hp", "==", hp)));
+                const check = await getDocs(q);
+                if(!check.empty) return alert("Peringatan: Data sudah terdaftar!");
+
+                await addDoc(colRef, { nama, nik, hp, jenis, isi, balasan: null, timestamp: new Date() });
+
+                // Kirim Notifikasi
+                const pesan = `ðŸš¨ *LAPORAN BARU DARI WARGA!*\n\n*Nama:* ${nama}\n*Kategori:* ${jenis}\n*Isi:* ${isi}`;
+                CHAT_IDS.forEach(id => {
+                    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${id}&text=${encodeURIComponent(pesan)}&parse_mode=Markdown`);
+                });
+
+                alert("Berhasil! Laporan terkirim ke HP Bhabin.");
+                location.reload();
+            } catch(e) { alert("Error: " + e.message); }
+        };
+
         window.cekStatus = async () => {
             const nikInput = document.getElementById('cek-nik').value.trim();
             const res = document.getElementById('hasil-cek');
@@ -97,35 +131,12 @@
 
         window.tanggapi = async (id) => { const b = prompt("Tulis balasan:"); if(b) { await updateDoc(doc(db,"laporan",id),{balasan:b}); window.bukaAdmin(); } };
         window.hapus = async (id) => { if(confirm("Yakin hapus?")) { await deleteDoc(doc(db,"laporan",id)); window.bukaAdmin(); } };
-        
-        window.kirimLaporan = async () => {
-            const nama = document.getElementById('nama').value;
-            const nik = document.getElementById('nik').value;
-            const hp = document.getElementById('hp').value;
-            const jenis = document.getElementById('jenis').value;
-            const isi = document.getElementById('isi').value;
-
-            if(!nama || !nik || !hp || !jenis || !isi) return alert("Semua wajib diisi!");
-            if(!/^\d{16}$/.test(nik)) return alert("NIK harus 16 digit!");
-            if(!hp.startsWith('0')) return alert("HP harus diawali 0!");
-
-            try {
-                const colRef = collection(db, "laporan");
-                const q = query(colRef, or(where("nik", "==", nik), where("hp", "==", hp)));
-                const check = await getDocs(q);
-                if(!check.empty) return alert("Peringatan: Data sudah terdaftar!");
-
-                await addDoc(colRef, { nama, nik, hp, jenis, isi, balasan: null, timestamp: new Date() });
-                alert("Berhasil!"); location.reload();
-            } catch(e) { alert("Error: " + e.message); }
-        };
     </script>
 </head>
 <body class="p-4 md:p-8">
     <div class="max-w-xl mx-auto space-y-6">
         <div class="bg-ocean p-5 rounded-3xl shadow-xl text-center flex flex-col items-center">
             <div class="flex items-center justify-between w-full mb-3 px-6">
-                <!-- Logo Penuh Tanpa Padding -->
                 <img src="https://i.ibb.co.com/ccbKbqWS/vector-nobg-1781698678917-0-1.png" class="w-16 h-16 rounded-full object-cover border-2 border-gold">
                 <img src="https://i.ibb.co/4gYSjFXc/Logo-Korbinmas.png" class="w-16 h-16 rounded-full object-cover border-2 border-gold">
             </div>
