@@ -1,13 +1,13 @@
 {
-  "name": "Lapor Pak Bhabin Klumprit",
+  "name": "Lapor Pak Bhabin",
   "short_name": "Lapor Bhabin",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1e293b",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "https://i.ibb.co.com/ccbKbqWS/vector-nobg-1781698678917-0-1.png",
       "sizes": "512x512",
       "type": "image/png"
     }
